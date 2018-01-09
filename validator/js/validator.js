@@ -10,7 +10,7 @@
 *            + specify errorWriteTarget
 *            + specify where error messages appear (under field or stacked in a single element)
 *            + extra validationTypes could be introduced by outside dev
-*            + allow more than one test to fail per field. right now, one is enough, but this could be useful for debugging purposes while developing
+*    3) allow more than one test to fail per field. right now, one is enough, but this could be useful for debugging purposes while developing
 */
 
 var validator = (function(){
