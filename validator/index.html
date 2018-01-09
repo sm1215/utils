@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en-US">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport" content="initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Form Validation</title>
+
+    <style>
+      .error{ border: 1px solid red; }
+      #errors{ color:red; }
+    </style>
+  </head>
+  <body>
+    <div id="siteframe">
+      <div id="wrapper">
+        <form action="#">
+          <div class="form-field">
+            <label for="text">Text</label>
+            <input id="text" type="text">
+          </div>
+          <div class="form-field">
+            <label for="checkbox">Checkbox</label>
+            <input id="checkbox" type="checkbox" value="checkbox">
+          </div>
+          <div class="form-field">
+            <label for="radio">Radio</label>
+            <input id="radio" type="radio" value="radio">
+          </div>
+          <div class="form-field">
+            <label for="textarea">Textarea</label>
+            <textarea id="texarea" type="textarea"></textarea>
+          </div>
+          <div class="form-field">
+            <label for="select">Select</label>
+            <select id="select">
+              <option value="option">Option</option>
+            </select>
+          </div>
+          <div class="form-field">
+            <label for="email">Email</label>
+            <input id="email" type="text" data-vtypes="required email">
+          </div>
+          <div class="form-field">
+            <label for="phone">Phone</label>
+            <input id="phone" type="text" data-vtypes="phone" required>
+          </div>
+          <div class="form-field">
+            <label for="date">Date</label>
+            <input id="date" type="text" data-vtypes="date">
+          </div>
+          <div class="form-field">
+            <label for="number">Number</label>
+            <input id="number" type="text" data-vtypes="number">
+          </div>
+          <div class="form-field">
+            <label for="letters">Letters</label>
+            <input id="letters" type="text" data-vtypes="letters">
+          </div>
+          <div id="errors"></div>
+          <input type="submit" id="submit">
+        </form>
+      </div>
+    </div>
+    <script type="text/javascript" src="js/validator.js"></script>
+    <script type="text/javascript">
+      document.addEventListener('DOMContentLoaded', function(){
+        document.querySelector('input[type="submit"]').addEventListener('click', function(e){
+          e.preventDefault();
+          validator.validate(document.querySelector('form'));
+        });
+
+        //run on refresh
+        validator.validate(document.querySelector('form'));
+
+        console.log('errors: ', validator.getErrorString());
+      });
+    </script>
+  </body>
+  </html>
