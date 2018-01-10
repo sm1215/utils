@@ -119,10 +119,10 @@ var validator = (function(){
           vtypes.push('required');
         }
 
-        _sortVtypesByWeight(vtypes);
+        var sortedVtypes = _sortVtypesByWeight(vtypes);
 
-        for (var j = 0; j < vtypes.length; j++) {
-          var vt = vtypes[j];
+        for (var j = 0; j < sortedVtypes.length; j++) {
+          var vt = sortedVtypes[j];
           var test = validationTypes[vt].test(f.value);
 
           if(test == false){
@@ -142,11 +142,11 @@ var validator = (function(){
   //Returns the sorted array
   var _sortVtypesByWeight = function(vtypes){
     if(vtypes.length <= 1){
-      return;
+      return vtypes;
     }
 
     var vt = validationTypes;
-    var sorted = sort(vtypes);
+    var toSort = vtypes;
 
     function sort(arr, i){
       i == undefined ? i = 0 : i;
@@ -164,8 +164,9 @@ var validator = (function(){
           arr[j] = swap;
         }
       }
-      return sort(arr, i+1);
+      return sort(arr, i + 1);
     }
+    return sort(toSort);
   }
 
   var _unmarkFields = function(fields){
