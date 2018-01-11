@@ -8,17 +8,17 @@
 *          some initial arguments that should be available:
 *            + specify errorWriteTarget
 *            + specify where error messages appear (under field or stacked in a single element)
-*            + extra validationTypes could be introduced by outside dev
+*            + extra _validationTypes could be introduced by outside dev
 *    2) allow more than one test to fail per field. right now, one is enough, but this could be useful for debugging purposes while developing
 */
 
-//[Note]: It might be useful to weight certain validationTypes higher than others.
+//[Note]: It might be useful to weight certain _validationTypes higher than others.
 //The 'required' test should be performed before any format-specific tests.
 //i.e. it doesn't make sense to tell a user their email format is incorrect if the field is blank
 
 var validator = (function(){
   var formElements = ['input', 'textarea', 'select']; //nodeNames (console lists these in caps)
-  var validationTypes = {
+  var _validationTypes = {
     required: {
       weight: 0,
       test: function(value){
@@ -74,7 +74,7 @@ var validator = (function(){
 
   var valid = true;
   var errorString = '';
-  var errorWriteTarget = document.querySelector('#errors');
+  // var errorWriteTarget = document.querySelector('#errors');
 
   var _validate = function(form){
     var fields = [];
@@ -123,12 +123,12 @@ var validator = (function(){
 
         for (var j = 0; j < sortedVtypes.length; j++) {
           var vt = sortedVtypes[j];
-          var test = validationTypes[vt].test(f.value);
+          var test = _validationTypes[vt].test(f.value);
 
           if(test == false){
             valid = false;
             if(_arrayContainsNode(failedFields, f) === false){
-              failedFields.push({ el: f, vtype: vt, error: validationTypes[vt].error });
+              failedFields.push({ el: f, vtype: vt, error: _validationTypes[vt].error });
               break;
             }
           }
@@ -138,14 +138,18 @@ var validator = (function(){
     return failedFields;
   }
 
-  //This will take the vtypes provided by the dev in html and sort them according to the weights found in the validationTypes object
+  var _runTest = function(vtype, value){
+    return _validationTypes[vtype].test(value);
+  }
+
+  //This will take the vtypes provided by the dev in html and sort them according to the weights found in the _validationTypes object
   //Returns the sorted array
   var _sortVtypesByWeight = function(vtypes){
     if(vtypes.length <= 1){
       return vtypes;
     }
 
-    var vt = validationTypes;
+    var vt = _validationTypes;
     var toSort = vtypes;
 
     function sort(arr, i){
@@ -243,7 +247,10 @@ var validator = (function(){
 
   return {
     validate: _validate,
+    runTest: _runTest,
     getErrorString: _getErrorString,
     isValid: _isValid
   }
 })();
+
+module.exports = validator;
