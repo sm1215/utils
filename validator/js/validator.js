@@ -74,6 +74,9 @@ var validator = (function(){
 
   var valid = true;
   var errorString = '';
+
+  //[todo]: This won't work when running tape tests. Maybe this needs to be moved
+  //inside a different enclosure. Might be solved by introducing a init function?
   // var errorWriteTarget = document.querySelector('#errors');
 
   var _validate = function(form){
