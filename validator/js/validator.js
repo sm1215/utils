@@ -18,8 +18,9 @@
 
 var validator = (function(){
   var formElements = ['input', 'textarea', 'select']; //nodeNames (console lists these in caps)
-  var _validationTypes = {
-    required: {
+  var _validationTypes = [
+    {
+      name: 'required',
       weight: 0,
       test: function(value){
         if(!value || !value.length){
@@ -29,28 +30,32 @@ var validator = (function(){
       },
       error: 'This field is required.'
     },
-    email: {
+    {
+      name: 'email',
       weight: 10,
       test: function(value){
         return /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/.test(value);
       },
       error: 'Incorrect email format.'
     },
-    phone: {
+    {
+      name: 'phone',
       weight: 10,
       test: function(value){
         return /^(\+\d{1,2}\s)?\(?\d{3}\)?[\s.-]\d{3}[\s.-]\d{4}$/.test(value);
       },
       error: 'Incorrect phone format.'
     },
-    date: {
+    {
+      name: 'date',
       weight: 10,
       test: function(value){
         return /^(\d{1,2})(\/|-)(\d{1,2})(\/|-)(([\d]{4})|([\d]{2}))$/.test(value);
       },
       error: 'Incorrect date format.'
     },
-    number: {
+    {
+      name: 'number',
       weight: 10,
       test: function(value){
         if(!value || value.length <= 0){
@@ -60,7 +65,8 @@ var validator = (function(){
       },
       error: 'This field only accepts numbers.'
     },
-    letters: {
+    {
+      name: 'letters',
       weight: 10,
       test: function(value){
         if(!value || value.length <= 0){
@@ -70,14 +76,14 @@ var validator = (function(){
       },
       error: 'This field only accepts letters.'
     }
-  };
+  ];
 
   var valid = true;
   var errorString = '';
 
   //[todo]: This won't work when running tape tests. Maybe this needs to be moved
   //inside a different enclosure. Might be solved by introducing a init function?
-  // var errorWriteTarget = document.querySelector('#errors');
+  var errorWriteTarget = document.querySelector('#errors');
 
   var _validate = function(form){
     var fields = [];
@@ -125,13 +131,13 @@ var validator = (function(){
         var sortedVtypes = _sortVtypesByWeight(vtypes);
 
         for (var j = 0; j < sortedVtypes.length; j++) {
-          var vt = sortedVtypes[j];
-          var test = _validationTypes[vt].test(f.value);
+          var vt = _findVtype(sortedVtypes[j]);
+          var test = vt.test(f.value);
 
           if(test == false){
             valid = false;
             if(_arrayContainsNode(failedFields, f) === false){
-              failedFields.push({ el: f, vtype: vt, error: _validationTypes[vt].error });
+              failedFields.push({ el: f, vtype: vt, error: vt.error });
               break;
             }
           }
@@ -142,7 +148,7 @@ var validator = (function(){
   }
 
   var _runTest = function(vtype, value){
-    return _validationTypes[vtype].test(value);
+    return _findVtype(vtype).test(value);
   }
 
   //This will take the vtypes provided by the dev in html and sort them according to the weights found in the _validationTypes object
@@ -164,7 +170,9 @@ var validator = (function(){
       for (var j = i; j < arr.length - 1; j++) {
         var keyA = arr[j];
         var keyB = arr[j + 1];
-        if(vt[keyA].weight > vt[keyB].weight){
+        var a = _findVtype(keyA);
+        var b = _findVtype(keyB);
+        if(a.weight > b.weight){
           var swap;
           swap = arr[j + 1];
           arr[j + 1] = arr[j];
@@ -174,6 +182,15 @@ var validator = (function(){
       return sort(arr, i + 1);
     }
     return sort(toSort);
+  }
+
+  var _findVtype = function(vtype){
+    for (var i = 0; i < _validationTypes.length; i++) {
+      if(vtype == _validationTypes[i].name){
+        return _validationTypes[i];
+      }
+    }
+    return false;
   }
 
   var _unmarkFields = function(fields){
@@ -256,4 +273,7 @@ var validator = (function(){
   }
 })();
 
-module.exports = validator;
+//for running tests
+// if(module !== undefined){
+//   module.exports = validator;
+// }
