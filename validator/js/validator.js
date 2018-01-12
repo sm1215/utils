@@ -274,6 +274,6 @@ var validator = (function(){
 })();
 
 //for running tests
-// if(module !== undefined){
-//   module.exports = validator;
-// }
+if(typeof(module) !== 'undefined'){
+  module.exports = validator;
+}
