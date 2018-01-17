@@ -17,6 +17,7 @@
 //i.e. it doesn't make sense to tell a user their email format is incorrect if the field is blank
 
 var validator = (function(){
+  var form;
   var formElements = ['input', 'textarea', 'select']; //nodeNames (console lists these in caps)
   var _validationTypes = [
     {
@@ -85,6 +86,18 @@ var validator = (function(){
   //inside a different enclosure. Might be solved by introducing a init function?
   var errorWriteTarget = document.querySelector('#errors');
 
+  var _init = function(opts){
+    if(!opts.length && opts.length <= 0){
+      return;
+    }
+
+    for(key in opts){
+      if(this.hasOwnProperty(key)){
+        this[key] = opts[key];
+      }
+    }
+  }
+
   var _validate = function(form){
     var fields = [];
     var failedFields = [];
@@ -94,13 +107,36 @@ var validator = (function(){
     failedFields = _runTests(fields);
 
     if(failedFields.length > 0){
-      handleFails(failedFields);
+      _handleFails(failedFields);
     }
 
     return valid;
   }
 
-  var handleFails = function(failedFields){
+  var _findFields = function(form){
+    var fields = [];
+    for (var i = 0; i < formElements.length; i++) {
+      var result = form.querySelectorAll(formElements[i]);
+      for (var j = 0; j < result.length; j++) {
+        fields.push(result[j]);
+      }
+    }
+    return fields;
+  }
+
+  var _unmarkFields = function(fields){
+    for (var i = 0; i < fields.length; i++) {
+      fields[i].classList.remove('error');
+    }
+  }
+
+  var _markFailedFields = function(failedFields){
+    for (var i = 0; i < failedFields.length; i++) {
+      failedFields[i].el.classList.add('error');
+    }
+  }
+
+  var _handleFails = function(failedFields){
     _markFailedFields(failedFields);
 
     //If appending to one location
@@ -193,18 +229,6 @@ var validator = (function(){
     return false;
   }
 
-  var _unmarkFields = function(fields){
-    for (var i = 0; i < fields.length; i++) {
-      fields[i].classList.remove('error');
-    }
-  }
-
-  var _markFailedFields = function(failedFields){
-    for (var i = 0; i < failedFields.length; i++) {
-      failedFields[i].el.classList.add('error');
-    }
-  }
-
   //returns array location if true
   var _arrayContainsNode = function(arr, node){
     for (var i = 0; i < arr.length; i++) {
@@ -223,17 +247,6 @@ var validator = (function(){
       }
     }
     return false;
-  }
-
-  var _findFields = function(form){
-    var fields = [];
-    for (var i = 0; i < formElements.length; i++) {
-      var result = form.querySelectorAll(formElements[i]);
-      for (var j = 0; j < result.length; j++) {
-        fields.push(result[j]);
-      }
-    }
-    return fields;
   }
 
   //Intended for use when appending all errors to the same location, like the bottom of a form
@@ -266,6 +279,7 @@ var validator = (function(){
   }
 
   return {
+    init: _init,
     validate: _validate,
     runTest: _runTest,
     getErrorString: _getErrorString,

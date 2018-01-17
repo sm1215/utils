@@ -1,0 +1,197 @@
+<!doctype html>
+<html lang="en-US">
+<head>
+  <style type="text/css">
+    #controls{
+      display:table;
+      position:fixed;
+      top:20px;
+      right:20px;
+      width:400px;
+    }
+    .field{
+      display:table-row;
+      width:100%;
+    }
+    .field:nth-child(odd){
+      background-color:#d2d3d4;
+    }
+    label{
+      display:table-cell;
+      width:70%;
+      margin:5px 0;
+    }
+    input{
+      display:table-cell;
+      /*width:30%;*/
+      margin:5px 0;
+    }
+    #loader{
+      height:200px;
+      width:200px;
+      border:1px dotted;
+    }
+  </style>
+</head>
+<body>
+  <div id="controls">
+    <div class="field">
+      <label for="numPoints">Number of Points</label>
+      <input id="numPoints" type="number" value="8" class="attribute">
+    </div>
+    <div class="field">
+      <label for="numPoints">Point Radius</label>
+      <input id="pointRad" type="number" value="5" class="attribute">
+    </div>
+    <div class="field">
+      <label for="strokeWidth">Stroke Width (px)</label>
+      <input id="strokeWidth" type="number" value="1" class="attribute">
+    </div>
+    <div class="field">
+      <label for="offset">Offset (Pull points inwards by this many pixels)</label>
+      <input id="offset" type="number" value="6" class="attribute">
+    </div>
+    <div class="field">
+      <label for="strokeColor">Stroke Color</label>
+      <input id="strokeColor" value="000000" class="jscolor attribute">
+    </div>
+    <div class="field">
+      <label for="fillColor">Fill Color</label>
+      <input id="fillColor" value="808285" class="jscolor attribute">
+    </div>
+    <div class="field">
+      <label for="bgColor">BG Color</label>
+      <input id="bgColor" value="ffffff" class="jscolor attribute">
+    </div>
+  </div>
+
+  <p class="desc">Tool for distributing points equally around the circumference of a circle. Will calculate x/y coords.</p>
+
+  <div id="loader">
+    <svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" viewBox="0 0 100 100" style="enable-background:new 0 0 100 100;" xml:space="preserve">
+    <style type="text/css">
+      .st0{fill:#808285;stroke:#000000;stroke-miterlimit:10; stroke-width:1;}
+    </style>
+    <g id="loader-group">
+      <circle id="e-1" class="st0" r="5"></circle>
+      <circle id="e-2" class="st0" r="5"></circle>
+      <circle id="e-3" class="st0" r="5"></circle>
+      <circle id="e-4" class="st0" r="5"></circle>
+      <circle id="e-5" class="st0" r="5"></circle>
+      <circle id="e-6" class="st0" r="5"></circle>
+      <circle id="e-7" class="st0" r="5"></circle>
+      <circle id="e-8" class="st0" r="5"></circle>
+      <!-- After Calculations - Example -->
+      <!-- <circle id="e-1" class="st0" r="5" cx="94" cy="50"></circle>
+      <circle id="e-2" class="st0" r="5" cx="81.11269837220809" cy="81.11269837220809"></circle>
+      <circle id="e-3" class="st0" r="5" cx="50" cy="94"></circle>
+      <circle id="e-4" class="st0" r="5" cx="18.887301627791913" cy="81.11269837220809"></circle>
+      <circle id="e-5" class="st0" r="5" cx="6" cy="50.00000000000001"></circle>
+      <circle id="e-6" class="st0" r="5" cx="18.887301627791903" cy="18.887301627791913"></circle>
+      <circle id="e-7" class="st0" r="5" cx="49.99999999999999" cy="6"></circle>
+      <circle id="e-8" class="st0" r="5" cx="81.11269837220809" cy="18.887301627791903"></circle> -->
+    </g>
+    </svg>
+  </div>
+  </div>
+</body>
+<script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/gsap/1.19.1/TweenMax.min.js"></script>
+<script type="text/javascript" src="js/jscolor.min.js"></script>
+<!-- <script type="text/javascript" src="js/lodash.min.js"></script> -->
+<script type="text/javascript">
+  var paraCirc = {
+    $loader: {},
+    $points: function(){ return this.$points.find('circle'); },
+    numPoints: function() { return this.$points.length; },
+    angleIncrement: function(){ return 360 / this.numPoints; },
+    strokeWidth: 0,
+    strokeColor: '',
+    bgColor: '',
+    fillColor: '',
+    offset: 0,
+
+    init: function(){
+      this.$loader = $('#loader');
+      // this.$points = this.$loader.find('circle');
+      this.updateThisAttributes();
+    },
+    updateThisAttributes: function(){
+      var attr = $('.attribute');
+      for (var i = 0; i < attr.length; i++) {
+        var $attr = $(attr[i]),
+          type = $attr.attr('id');
+
+        paraCirc[type] = $attr.val();
+
+        if(type == 'bgColor'){
+          paraCirc.$loader.css('background-color', '#' + $attr.val());
+        }
+      }
+
+      paraCirc.setPointHTML();
+      paraCirc.setAttributes();
+      paraCirc.setCoords();
+
+      // this.$points = $loader.find('circle');
+    },
+    setPointHTML: function(){
+      var point = '<circle></circle>',
+        pointsString = [];
+
+      for (var i = 0; i < this.numPoints; i++) {
+        pointsString.push(point);
+      }
+
+      this.$loader.find('svg').html(pointsString.join(' '));
+      this.$points = this.$loader.find('circle')
+    },
+    setAttributes: function(){
+      var circ = $('circle');
+      for (var i = 0; i < circ.length; i++) {
+        $(circ[i]).attr({
+          'r': this.pointRad,
+          'stroke-width': this.strokeWidth + 'px',
+          'stroke': '#' + this.strokeColor,
+          'fill': '#' + this.fillColor
+        });
+      }
+    },
+    setCoords: function(){
+      console.log('set coords');
+      var $loader = this.$loader;
+
+      //jq attr bug with viewBox camel-casing
+      var cx = $loader.find('svg')[0].getAttribute('viewBox').split(' ')[2] / 2,
+        cy = $loader.find('svg')[0].getAttribute('viewBox').split(' ')[3] / 2;
+      var r = cx - this.offset;
+
+      for (var i = 0; i < this.numPoints; i++) {
+        var p = this.$points[i];
+        var a = (this.angleIncrement() * i) * (Math.PI / 180); //need to convert degrees to radians here
+        var x = this.calcXPosition(cx, r, a);
+        var y = this.calcYPosition(cy, r, a);
+
+        console.log('p', p, 'cx', cx, 'cy', cy, 'r', r, 'a', a);
+
+        $(p).attr({'cx': x, 'cy': y});
+      }
+    },
+    calcXPosition: function(cx, r, a){
+      //Part of Parametric equation for circles
+      return cx + r * Math.cos(a);
+    },
+    calcYPosition: function(cy, r, a){
+      //Part of Parametric equation for circles
+      return cy + r * Math.sin(a);
+    }
+  }
+
+  $(document).on('ready', function(){
+    // paraCirc.setPoints();
+    paraCirc.init();
+  })
+  .on('change', '.attribute', paraCirc.updateThisAttributes)
+  ;
+</script>
+</html>
