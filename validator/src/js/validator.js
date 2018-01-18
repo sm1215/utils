@@ -3,90 +3,88 @@
 *  Author: Sam Miller
 *  Version 0.0.2
 *  [todo]:
-*    1) add constructor or initialization function
-*      1b) accept user arguments on constructor for customization
+*    1) accept user arguments on constructor for customization
 *          some initial arguments that should be available:
 *            + specify errorWriteTarget
 *            + specify where error messages appear (under field or stacked in a single element)
-*            + extra _validationTypes could be introduced by outside dev
+*            + extra validationTypes could be introduced by outside dev
 *    2) allow more than one test to fail per field. right now, one is enough, but this could be useful for debugging purposes while developing
 */
 
-//[Note]: It might be useful to weight certain _validationTypes higher than others.
-//The 'required' test should be performed before any format-specific tests.
+//[Note]: It might be useful to weight certain validationTypes higher than others.
+//The 'required' vtype test should be performed before any format-specific tests.
 //i.e. it doesn't make sense to tell a user their email format is incorrect if the field is blank
 
-var validator = (function(){
-  var form;
-  var formElements = ['input', 'textarea', 'select']; //nodeNames (console lists these in caps)
-  var _validationTypes = [
-    {
-      name: 'required',
-      weight: 0,
-      test: function(value){
-        if(!value || !value.length){
-          return false;
-        }
-        return value.length > 0;
-      },
-      error: 'This field is required.'
-    },
-    {
-      name: 'email',
-      weight: 10,
-      test: function(value){
-        return /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/.test(value);
-      },
-      error: 'Incorrect email format.'
-    },
-    {
-      name: 'phone',
-      weight: 10,
-      test: function(value){
-        return /^(\+\d{1,2}\s)?\(?\d{3}\)?[\s.-]\d{3}[\s.-]\d{4}$/.test(value);
-      },
-      error: 'Incorrect phone format.'
-    },
-    {
-      name: 'date',
-      weight: 10,
-      test: function(value){
-        return /^(\d{1,2})(\/|-)(\d{1,2})(\/|-)(([\d]{4})|([\d]{2}))$/.test(value);
-      },
-      error: 'Incorrect date format.'
-    },
-    {
-      name: 'number',
-      weight: 10,
-      test: function(value){
-        if(!value || value.length <= 0){
-          return false;
-        }
-        return /^\d+$/.test(value);
-      },
-      error: 'This field only accepts numbers.'
-    },
-    {
-      name: 'letters',
-      weight: 10,
-      test: function(value){
-        if(!value || value.length <= 0){
-          return false;
-        }
-        return /^[a-zA-Z]+$/.test(value);
-      },
-      error: 'This field only accepts letters.'
-    }
-  ];
+class Validator {
+  constructor(){
+    this.form = null;
+    this.formElements = ['input', 'textarea', 'select'];
+    this.valid = true;
+    this.errorString = '';
+    this.errorWriteTarget = document.querySelector('#errors');
 
-  var valid = true;
-  var errorString = '';
+    this.validationTypes = [
+      {
+        name: 'required',
+        weight: 0,
+        test: function(value){
+          if(!value || !value.length){
+            return false;
+          }
+          return value.length > 0;
+        },
+        error: 'This field is required.'
+      },
+      {
+        name: 'email',
+        weight: 10,
+        test: function(value){
+          return /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/.test(value);
+        },
+        error: 'Incorrect email format.'
+      },
+      {
+        name: 'phone',
+        weight: 10,
+        test: function(value){
+          return /^(\+\d{1,2}\s)?\(?\d{3}\)?[\s.-]\d{3}[\s.-]\d{4}$/.test(value);
+        },
+        error: 'Incorrect phone format.'
+      },
+      {
+        name: 'date',
+        weight: 10,
+        test: function(value){
+          return /^(\d{1,2})(\/|-)(\d{1,2})(\/|-)(([\d]{4})|([\d]{2}))$/.test(value);
+        },
+        error: 'Incorrect date format.'
+      },
+      {
+        name: 'number',
+        weight: 10,
+        test: function(value){
+          if(!value || value.length <= 0){
+            return false;
+          }
+          return /^\d+$/.test(value);
+        },
+        error: 'This field only accepts numbers.'
+      },
+      {
+        name: 'letters',
+        weight: 10,
+        test: function(value){
+          if(!value || value.length <= 0){
+            return false;
+          }
+          return /^[a-zA-Z]+$/.test(value);
+        },
+        error: 'This field only accepts letters.'
+      }
+    ];
+  }
 
-  //[todo]: This won't work when running tape tests. Maybe this needs to be moved
-  //inside a different enclosure. Might be solved by introducing a init function?
-  var errorWriteTarget = document.querySelector('#errors');
-
-  var _init = function(opts){
+  _init(opts){
     if(!opts.length && opts.length <= 0){
       return;
     }
@@ -98,7 +96,7 @@ var validator = (function(){
     }
   }
 
-  var _validate = function(form){
+  _validate(form){
     var fields = [];
     var failedFields = [];
 
@@ -113,7 +111,7 @@ var validator = (function(){
     return valid;
   }
 
-  var _findFields = function(form){
+  _findFields(form){
     var fields = [];
     for (var i = 0; i < formElements.length; i++) {
       var result = form.querySelectorAll(formElements[i]);
@@ -124,19 +122,19 @@ var validator = (function(){
     return fields;
   }
 
-  var _unmarkFields = function(fields){
+  _unmarkFields(fields){
     for (var i = 0; i < fields.length; i++) {
       fields[i].classList.remove('error');
     }
   }
 
-  var _markFailedFields = function(failedFields){
+  _markFailedFields(failedFields){
     for (var i = 0; i < failedFields.length; i++) {
       failedFields[i].el.classList.add('error');
     }
   }
 
-  var _handleFails = function(failedFields){
+  _handleFails(failedFields){
     _markFailedFields(failedFields);
 
     //If appending to one location
@@ -147,7 +145,7 @@ var validator = (function(){
     _appendErrorsToFields(failedFields);
   }
 
-  var _runTests = function(fields){
+  _runTests(fields){
     var failedFields = [];
     for (var i = 0; i < fields.length; i++) {
       var f = fields[i];
@@ -183,18 +181,18 @@ var validator = (function(){
     return failedFields;
   }
 
-  var _runTest = function(vtype, value){
+  _runTest(vtype, value){
     return _findVtype(vtype).test(value);
   }
 
-  //This will take the vtypes provided by the dev in html and sort them according to the weights found in the _validationTypes object
+  //This will take the vtypes provided by the dev in html and sort them according to the weights found in the validationTypes object
   //Returns the sorted array
-  var _sortVtypesByWeight = function(vtypes){
+  _sortVtypesByWeight(vtypes){
     if(vtypes.length <= 1){
       return vtypes;
     }
 
-    var vt = _validationTypes;
+    var vt = validationTypes;
     var toSort = vtypes;
 
     function sort(arr, i){
@@ -220,17 +218,17 @@ var validator = (function(){
     return sort(toSort);
   }
 
-  var _findVtype = function(vtype){
-    for (var i = 0; i < _validationTypes.length; i++) {
-      if(vtype == _validationTypes[i].name){
-        return _validationTypes[i];
+  _findVtype(vtype){
+    for (var i = 0; i < validationTypes.length; i++) {
+      if(vtype == validationTypes[i].name){
+        return validationTypes[i];
       }
     }
     return false;
   }
 
   //returns array location if true
-  var _arrayContainsNode = function(arr, node){
+  _arrayContainsNode(arr, node){
     for (var i = 0; i < arr.length; i++) {
       if(arr[i].hasOwnProperty('el') && arr[i].el.isSameNode(node)){
         return i;
@@ -240,7 +238,7 @@ var validator = (function(){
   }
 
   //returns array location if true
-  var _arrayContainsString = function(arr, string){
+  _arrayContainsString(arr, string){
     for (var i = 0; i < arr.length; i++) {
       if(arr[i] == string){
         return i;
@@ -250,7 +248,7 @@ var validator = (function(){
   }
 
   //Intended for use when appending all errors to the same location, like the bottom of a form
-  var _buildErrorString = function(failedFields){
+  _buildErrorString(failedFields){
     var es = '<ul class="form-errors">';
     for (var i = 0; i < failedFields.length; i++) {
       es += '<li>' + failedFields[i].error + '</li>';
@@ -259,35 +257,24 @@ var validator = (function(){
     return es;
   }
 
-  var _writeErrorsToTarget = function(errorString){
+  _writeErrorsToTarget(errorString){
     errorWriteTarget.innerHTML = errorString;
   }
 
   //Intended for use when appending errors directly to their respective fields
-  var _appendErrorsToFields = function(failedFields){
+  _appendErrorsToFields(failedFields){
     for (var i = 0; i < failedFields.length; i++) {
       failedFields[i].el.insertAdjacentHTML('afterend', '<div class="error-message"><p>'+ failedFields[i].error +'</p></div>');
     }
   }
 
-  var _getErrorString = function(){
+  _getErrorString(){
     return errorString;
   }
 
-  var _isValid = function(){
+  _isValid(){
     return valid;
   }
+};
 
-  return {
-    init: _init,
-    validate: _validate,
-    runTest: _runTest,
-    getErrorString: _getErrorString,
-    isValid: _isValid
-  }
-})();
-
-//for running tests
-if(typeof(module) !== 'undefined'){
-  module.exports = validator;
-}
+module.exports = Validator;
