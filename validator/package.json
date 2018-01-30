@@ -5,7 +5,8 @@
   "author": "Sam Miller",
   "scripts": {
     "start": "parcel index.html",
-    "watch": "parcel watch index.html"
+    "watch": "parcel watch index.html",
+    "test": "tape tests/start.js"
   },
   "repository": {
     "type": "git",

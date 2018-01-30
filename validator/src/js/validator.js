@@ -1,11 +1,11 @@
 /*
 *  Small frontend validator module.
 *  Author: Sam Miller
-*  Version 0.0.2
+*  Version 0.0.5
 *  [todo]:
 *    1) accept user arguments on constructor for customization
 *          some initial arguments that should be available:
-*            + specify errorWriteTarget
+*            + specify errorTarget
 *            + specify where error messages appear (under field or stacked in a single element)
 *            + extra validationTypes could be introduced by outside dev
 *    2) allow more than one test to fail per field. right now, one is enough, but this could be useful for debugging purposes while developing
@@ -16,13 +16,14 @@
 //i.e. it doesn't make sense to tell a user their email format is incorrect if the field is blank
 
 class Validator {
-  constructor(){
-    this.form = null;
-    this.formElements = ['input', 'textarea', 'select'];
+  constructor(opts){
+    console.log("this", this);
+
+    this.form = 'default-form';
+    this.inputSelector = 'data-my-vtypes';
     this.valid = true;
     this.errorString = '';
-    this.errorWriteTarget = document.querySelector('#errors');
-
+    this.errorTarget = document.querySelector('#errors');
     this.validationTypes = [
       {
         name: 'required',
@@ -82,36 +83,99 @@ class Validator {
         error: 'This field only accepts letters.'
       }
     ];
+
+    let r = this.init(this, opts);
   }
 
-  _init(opts){
-    if(!opts.length && opts.length <= 0){
+  /*
+  * init will take an opts object and overwrite any defaults that it matches
+  * - form: selector for the form
+  * - inputSelector: what to search the form for
+  * - errorTarget: should either be 'inline' for inline errors or a selector pointing to a specified element made for holding errors.
+  * - validationTypes: add these to the default array unless a matching name is found
+  * - validationTypes (matching name): overwrite any matching properties. maybe the user just wants to change the error message and leave the rest.
+  */
+
+  init(defaults, opts){
+    if(!opts || typeof(opts) == 'undefined'){
       return;
     }
 
-    for(key in opts){
-      if(this.hasOwnProperty(key)){
-        this[key] = opts[key];
+    return mergeOptions(defaults, opts);
+
+    function mergeOptions(a, b){
+      a = mergeObjects(a, b);
+      a = mergeValidationTypes(a, b);
+
+      return a;
+    }
+
+    //Merge properties of b and a.
+    //If a matching key is found between the two, the value of b should override the value of a.
+    //Returns the modified 'a' object
+    function mergeObjects(a, b){
+      if(typeof(a) == 'object' && typeof(b) == 'object'){
+        //Check almost all of the keys except validationTypes.
+        //These have a more complex structure and are handled in a separate function below
+        for(let key in b){
+          if(key != 'validationTypes' && a.hasOwnProperty(key) && b[key] != undefined){
+            a[key] = b[key];
+          }
+        }
       }
+
+      return a;
+    }
+
+    function mergeValidationTypes(a, b){
+      if(!a.hasOwnProperty('validationTypes') || !b.hasOwnProperty('validationTypes')){
+        return a;
+      }
+
+      let av = a.validationTypes;
+      let bv = b.validationTypes;
+      if(bv.hasOwnProperty('length') && bv.length > 0){
+
+        bv.forEach((bel) => {
+          let found = false;
+          if(bel.hasOwnProperty('name')){
+
+            av.forEach((ael, i) => {
+              if(ael.name == bel.name){
+                found = true;
+                av[i] = mergeObjects(ael, bel);
+              }
+            });
+
+            if(!found){
+              av.push(bel);
+            }
+          }
+        });
+        a.validationTypes = av;
+      }
+
+      return a;
     }
   }
 
-  _validate(form){
+  validate(form){
     var fields = [];
     var failedFields = [];
 
-    fields = _findFields(form);
-     _unmarkFields(fields);
-    failedFields = _runTests(fields);
+    fields = findFields(form);
+     unmarkFields(fields);
+    failedFields = runTests(fields);
 
     if(failedFields.length > 0){
-      _handleFails(failedFields);
+      handleFails(failedFields);
     }
 
     return valid;
   }
 
-  _findFields(form){
+  //finding fields should use the inputSelector moving forward
+  findFields(form){
     var fields = [];
     for (var i = 0; i < formElements.length; i++) {
       var result = form.querySelectorAll(formElements[i]);
@@ -122,30 +186,30 @@ class Validator {
     return fields;
   }
 
-  _unmarkFields(fields){
+  unmarkFields(fields){
     for (var i = 0; i < fields.length; i++) {
       fields[i].classList.remove('error');
     }
   }
 
-  _markFailedFields(failedFields){
+  markFailedFields(failedFields){
     for (var i = 0; i < failedFields.length; i++) {
       failedFields[i].el.classList.add('error');
     }
   }
 
-  _handleFails(failedFields){
-    _markFailedFields(failedFields);
+  handleFails(failedFields){
+    markFailedFields(failedFields);
 
     //If appending to one location
-    // errorString = _buildErrorString(failedFields);
-    // _writeErrorsToTarget(errorString);
+    // errorString = buildErrorString(failedFields);
+    // writeErrorsToTarget(errorString);
 
     //If appending to fields
-    _appendErrorsToFields(failedFields);
+    appendErrorsToFields(failedFields);
   }
 
-  _runTests(fields){
+  runTests(fields){
     var failedFields = [];
     for (var i = 0; i < fields.length; i++) {
       var f = fields[i];
@@ -158,19 +222,19 @@ class Validator {
       }
 
       if(vtypes){
-        if(required != null && _arrayContainsString(vtypes, 'required') === false){
+        if(required != null && arrayContainsString(vtypes, 'required') === false){
           vtypes.push('required');
         }
 
-        var sortedVtypes = _sortVtypesByWeight(vtypes);
+        var sortedVtypes = sortVtypesByWeight(vtypes);
 
         for (var j = 0; j < sortedVtypes.length; j++) {
-          var vt = _findVtype(sortedVtypes[j]);
+          var vt = findVtype(sortedVtypes[j]);
           var test = vt.test(f.value);
 
           if(test == false){
             valid = false;
-            if(_arrayContainsNode(failedFields, f) === false){
+            if(arrayContainsNode(failedFields, f) === false){
               failedFields.push({ el: f, vtype: vt, error: vt.error });
               break;
             }
@@ -181,13 +245,13 @@ class Validator {
     return failedFields;
   }
 
-  _runTest(vtype, value){
-    return _findVtype(vtype).test(value);
+  runTest(vtype, value){
+    return findVtype(vtype).test(value);
   }
 
   //This will take the vtypes provided by the dev in html and sort them according to the weights found in the validationTypes object
   //Returns the sorted array
-  _sortVtypesByWeight(vtypes){
+  sortVtypesByWeight(vtypes){
     if(vtypes.length <= 1){
       return vtypes;
     }
@@ -204,8 +268,8 @@ class Validator {
       for (var j = i; j < arr.length - 1; j++) {
         var keyA = arr[j];
         var keyB = arr[j + 1];
-        var a = _findVtype(keyA);
-        var b = _findVtype(keyB);
+        var a = findVtype(keyA);
+        var b = findVtype(keyB);
         if(a.weight > b.weight){
           var swap;
           swap = arr[j + 1];
@@ -218,7 +282,7 @@ class Validator {
     return sort(toSort);
   }
 
-  _findVtype(vtype){
+  findVtype(vtype){
     for (var i = 0; i < validationTypes.length; i++) {
       if(vtype == validationTypes[i].name){
         return validationTypes[i];
@@ -228,7 +292,7 @@ class Validator {
   }
 
   //returns array location if true
-  _arrayContainsNode(arr, node){
+  arrayContainsNode(arr, node){
     for (var i = 0; i < arr.length; i++) {
       if(arr[i].hasOwnProperty('el') && arr[i].el.isSameNode(node)){
         return i;
@@ -238,7 +302,7 @@ class Validator {
   }
 
   //returns array location if true
-  _arrayContainsString(arr, string){
+  arrayContainsString(arr, string){
     for (var i = 0; i < arr.length; i++) {
       if(arr[i] == string){
         return i;
@@ -248,7 +312,7 @@ class Validator {
   }
 
   //Intended for use when appending all errors to the same location, like the bottom of a form
-  _buildErrorString(failedFields){
+  buildErrorString(failedFields){
     var es = '<ul class="form-errors">';
     for (var i = 0; i < failedFields.length; i++) {
       es += '<li>' + failedFields[i].error + '</li>';
@@ -257,22 +321,22 @@ class Validator {
     return es;
   }
 
-  _writeErrorsToTarget(errorString){
-    errorWriteTarget.innerHTML = errorString;
+  writeErrorsToTarget(errorString){
+    errorTarget.innerHTML = errorString;
   }
 
   //Intended for use when appending errors directly to their respective fields
-  _appendErrorsToFields(failedFields){
+  appendErrorsToFields(failedFields){
     for (var i = 0; i < failedFields.length; i++) {
       failedFields[i].el.insertAdjacentHTML('afterend', '<div class="error-message"><p>'+ failedFields[i].error +'</p></div>');
     }
   }
 
-  _getErrorString(){
+  getErrorString(){
     return errorString;
   }
 
-  _isValid(){
+  isValid(){
     return valid;
   }
 };
