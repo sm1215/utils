@@ -73,7 +73,7 @@ require = (function (modules, cache, entry) {
 /*
 *  Small frontend validator module.
 *  Author: Sam Miller
-*  Version 0.0.5
+*  Version 0.0.6
 *  [todo]:
 *    1) accept user arguments on constructor for customization
 *          some initial arguments that should be available:
@@ -89,8 +89,8 @@ require = (function (modules, cache, entry) {
 
 class Validator {
   constructor(opts){
-    console.log("this", this);
 
+    //Defaults
     this.form = 'default-form';
     this.inputSelector = 'data-my-vtypes';
     this.valid = true;
@@ -156,7 +156,7 @@ class Validator {
       }
     ];
 
-    let r = this.init(this, opts);
+    this.init(this, opts);
   }
 
   /*
@@ -173,62 +173,62 @@ class Validator {
       return;
     }
 
-    return mergeOptions(defaults, opts);
+    this.mergeOptions(defaults, opts);
+  }
 
-    function mergeOptions(a, b){
-      a = mergeObjects(a, b);
-      a = mergeValidationTypes(a, b);
+  mergeOptions(a, b){
+    a = this.mergeObjects(a, b);
+    a = this.mergeValidationTypes(a, b);
 
-      return a;
-    }
+    return a;
+  }
 
-    //Merge properties of b and a.
-    //If a matching key is found between the two, the value of b should override the value of a.
-    //Returns the modified 'a' object
-    function mergeObjects(a, b){
-      if(typeof(a) == 'object' && typeof(b) == 'object'){
-        //Check almost all of the keys except validationTypes.
+  //Merge properties of b and a.
+  //If a matching key is found between the two, the value of b should override the value of a.
+  //Returns the modified 'a' object
+  mergeObjects(a, b){
+    if(typeof(a) == 'object' && typeof(b) == 'object'){
+      for(let key in b){
+        //Leaving arrays alone (validationTypes)
         //These have a more complex structure and are handled in a separate function below
-        for(let key in b){
-          if(key != 'validationTypes' && a.hasOwnProperty(key) && b[key] != undefined){
-            a[key] = b[key];
-          }
+        if(!Array.isArray(b[key]) && a.hasOwnProperty(key) && b[key] != undefined){
+          a[key] = b[key];
         }
       }
+    }
 
+    return a;
+  }
+
+  mergeValidationTypes(a, b){
+    if(!a.hasOwnProperty('validationTypes') || !b.hasOwnProperty('validationTypes')){
       return a;
     }
 
-    function mergeValidationTypes(a, b){
-      if(!a.hasOwnProperty('validationTypes') || !b.hasOwnProperty('validationTypes')){
-        return a;
-      }
+    let av = a.validationTypes;
+    let bv = b.validationTypes;
+    if(bv.hasOwnProperty('length') && bv.length > 0){
 
-      let av = a.validationTypes;
-      let bv = b.validationTypes;
-      if(bv.hasOwnProperty('length') && bv.length > 0){
+      bv.forEach((bel) => {
+        let found = false;
+        if(bel.hasOwnProperty('name')){
 
-        bv.forEach((bel) => {
-          let found = false;
-          if(bel.hasOwnProperty('name')){
-
-            av.forEach((ael, i) => {
-              if(ael.name == bel.name){
-                found = true;
-                av[i] = mergeObjects(ael, bel);
-              }
-            });
-
-            if(!found){
-              av.push(bel);
+          av.forEach((ael, i) => {
+            if(ael.name == bel.name){
+              found = true;
+              av[i] = this.mergeObjects(ael, bel);
             }
-          }
-        });
-        a.validationTypes = av;
-      }
+          });
 
-      return a;
+          if(!found){
+            av.push(bel);
+          }
+        }
+      });
+      a.validationTypes = av;
     }
+
+    return a;
   }
 
   validate(form){
@@ -460,7 +460,7 @@ function Module() {
 module.bundle.Module = Module;
 
 if (!module.bundle.parent && typeof WebSocket !== 'undefined') {
-  var ws = new WebSocket('ws://' + window.location.hostname + ':54361/');
+  var ws = new WebSocket('ws://' + window.location.hostname + ':55803/');
   ws.onmessage = function(event) {
     var data = JSON.parse(event.data);
 

@@ -105,130 +105,130 @@ test.createStream()
 
 //For testing a mergeObjects function
 
-let defaults = {
-  form: 'default-form',
-  inputSelector: 'data-my-vtypes',
-  valid: true,
-  errorString: '',
-  errorTarget: '#errors',
-  validationTypes: [
-    {
-      name: 'required',
-      weight: 0,
-      test: function(value){
-        if(!value || !value.length){
-          return false;
-        }
-        return value.length > 0;
-      },
-      error: 'This field is required.'
-    }
-  ]
-};
+// let defaults = {
+//   form: 'default-form',
+//   inputSelector: 'data-my-vtypes',
+//   valid: true,
+//   errorString: '',
+//   errorTarget: '#errors',
+//   validationTypes: [
+//     {
+//       name: 'required',
+//       weight: 0,
+//       test: function(value){
+//         if(!value || !value.length){
+//           return false;
+//         }
+//         return value.length > 0;
+//       },
+//       error: 'This field is required.'
+//     }
+//   ]
+// };
 
-let override = {
-  inputSelector: 'data-vtypes',
-  errorTarget: 'inline',
-  validationTypes: [
-    {
-      name: 'required',
-      weight: 10,
-      error: 'Please fill out all fields.'
-    },
-    {
-      name: 'price',
-      weight: 20,
-      test: function(value){
-        return /(\d)+\.(\d){0,2}$/.test(value);
-      },
-      error: 'Incorrect price format.'
-    }
-  ]
-};
+// let override = {
+//   inputSelector: 'data-vtypes',
+//   errorTarget: 'inline',
+//   validationTypes: [
+//     {
+//       name: 'required',
+//       weight: 10,
+//       error: 'Please fill out all fields.'
+//     },
+//     {
+//       name: 'price',
+//       weight: 20,
+//       test: function(value){
+//         return /(\d)+\.(\d){0,2}$/.test(value);
+//       },
+//       error: 'Incorrect price format.'
+//     }
+//   ]
+// };
 
-let expected = {
-  form: 'default-form',
-  inputSelector: 'data-vtypes',
-  valid: true,
-  errorString: '',
-  errorTarget: 'inline',
-  validationTypes: [
-    {
-      name: 'required',
-      weight: 10,
-      test: function(value){
-        if(!value || !value.length){
-          return false;
-        }
-        return value.length > 0;
-      },
-      error: 'Please fill out all fields.'
-    },
-    {
-      name: 'price',
-      weight: 20,
-      test: function(value){
-        return /(\d)+\.(\d){0,2}$/.test(value);
-      },
-      error: 'Incorrect price format.'
-    }
-  ]
-}
+// let expected = {
+//   form: 'default-form',
+//   inputSelector: 'data-vtypes',
+//   valid: true,
+//   errorString: '',
+//   errorTarget: 'inline',
+//   validationTypes: [
+//     {
+//       name: 'required',
+//       weight: 10,
+//       test: function(value){
+//         if(!value || !value.length){
+//           return false;
+//         }
+//         return value.length > 0;
+//       },
+//       error: 'Please fill out all fields.'
+//     },
+//     {
+//       name: 'price',
+//       weight: 20,
+//       test: function(value){
+//         return /(\d)+\.(\d){0,2}$/.test(value);
+//       },
+//       error: 'Incorrect price format.'
+//     }
+//   ]
+// }
 
-//Merge properties of b and a.
-//If a matching key is found between the two, the value of b should override the value of a.
-//Returns the modified 'a' object
-function mergeObjects(a, b){
-  if(typeof(a) == 'object' && typeof(b) == 'object'){
-    //Check almost all of the keys except validationTypes.
-    //These have a more complex structure and are handled in a separate loop below
-    for(let key in b){
-      if(key != 'validationTypes' && a.hasOwnProperty(key) && b[key] != undefined){
-        a[key] = b[key];
-      }
-    }
-  }
+// //Merge properties of b and a.
+// //If a matching key is found between the two, the value of b should override the value of a.
+// //Returns the modified 'a' object
+// function mergeObjects(a, b){
+//   if(typeof(a) == 'object' && typeof(b) == 'object'){
+//     //Check almost all of the keys except validationTypes.
+//     //These have a more complex structure and are handled in a separate loop below
+//     for(let key in b){
+//       if(key != 'validationTypes' && a.hasOwnProperty(key) && b[key] != undefined){
+//         a[key] = b[key];
+//       }
+//     }
+//   }
 
-  return a;
-}
+//   return a;
+// }
 
-function mergeValidationTypes(a, b){
-  if(!a.hasOwnProperty('validationTypes') || !b.hasOwnProperty('validationTypes')){
-    return a;
-  }
+// function mergeValidationTypes(a, b){
+//   if(!a.hasOwnProperty('validationTypes') || !b.hasOwnProperty('validationTypes')){
+//     return a;
+//   }
 
-  let av = a.validationTypes;
-  let bv = b.validationTypes;
-  if(bv.hasOwnProperty('length') && bv.length > 0){
+//   let av = a.validationTypes;
+//   let bv = b.validationTypes;
+//   if(bv.hasOwnProperty('length') && bv.length > 0){
 
-    bv.forEach((bel) => {
-      let found = false;
-      if(bel.hasOwnProperty('name')){
+//     bv.forEach((bel) => {
+//       let found = false;
+//       if(bel.hasOwnProperty('name')){
 
-        av.forEach((ael, i) => {
-          if(ael.name == bel.name){
-            found = true;
-            av[i] = mergeObjects(ael, bel);
-          }
-        });
+//         av.forEach((ael, i) => {
+//           if(ael.name == bel.name){
+//             found = true;
+//             av[i] = mergeObjects(ael, bel);
+//           }
+//         });
 
-        if(!found){
-          av.push(bel);
-        }
-      }
-    });
-    a.validationTypes = av;
-  }
+//         if(!found){
+//           av.push(bel);
+//         }
+//       }
+//     });
+//     a.validationTypes = av;
+//   }
 
-  return a;
-}
+//   return a;
+// }
 
-function mergeOptions(a, b){
-  a = mergeObjects(a, b);
-  a = mergeValidationTypes(a, b);
+// function mergeOptions(a, b){
+//   a = mergeObjects(a, b);
+//   a = mergeValidationTypes(a, b);
 
-  return a;
-}
+//   return a;
+// }
 
 // if(this.hasOwnProperty(key)){
 //   if(typeof(this[key]) == 'object' && typeof(opts[key]) == 'object'){
