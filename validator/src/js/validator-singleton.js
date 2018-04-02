@@ -1,8 +1,7 @@
 /*
 *  Frontend validator singleton
 *  Author: Sam Miller
-*  Version 0.0.7
-*  For use with pre-ES6 projects
+*  Version 0.0.8
 */
 
 var Validator = {
@@ -11,7 +10,7 @@ var Validator = {
     //Defaults
     this.form = 'default-form';
     this.formElements = ['input', 'textarea', 'select', 'radio'];
-    this.inputSelector = 'data-my-vtypes';
+    this.inputSelector = 'data-vtypes';
     this.valid = true;
     this.errorString = '';
     this.errorTarget = document.querySelector('#errors');
@@ -28,17 +27,17 @@ var Validator = {
         error: 'This field is required.'
       },
       {
-        name: 'required-radio',
+        name: 'radio',
         weight: 0,
         test: function(){
           var options = document.querySelectorAll('[name="'+ this.getAttribute('name') +'"]');
           var value;
-          options.forEach(function(el){
-            if(el.checked){
-              value = el.value;
+          for(var i = 0; i < options.length; i++){
+            if(options[i].checked){
+              value = options[i].value;
             }
-          });
-          return value ? value : false;
+          }
+          return value ? true : false;
         },
         error: 'Please select an option.'
       },
@@ -48,15 +47,15 @@ var Validator = {
         test: function(){
           return /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/.test(this.value);
         },
-        error: 'Incorrect email format.'
+        error: 'Incorrect email format. (user@domain.com)'
       },
       {
         name: 'phone',
         weight: 10,
         test: function(){
-          return /^(\+\d{1,2}\s)?\(?\d{3}\)?[\s.-]\d{3}[\s.-]\d{4}$/.test(this.value);
+          return /^(\d{10})$/.test(this.value);
         },
-        error: 'Incorrect phone format.'
+        error: 'Incorrect phone format. (555-555-5555)'
       },
       {
         name: 'date',
@@ -64,7 +63,7 @@ var Validator = {
         test: function(){
           return /^(\d{1,2})(\/|-)(\d{1,2})(\/|-)(([\d]{4})|([\d]{2}))$/.test(this.value);
         },
-        error: 'Incorrect date format.'
+        error: 'Incorrect date format. (1-1-2018)'
       },
       {
         name: 'number',
@@ -105,10 +104,10 @@ var Validator = {
   init: function(defaults, opts){
     if(!opts || typeof(opts) == 'undefined'){
       return;
-    }
+    }    
 
-    a = this.mergeObjects(a, b);
-    a = this.mergeValidationTypes(a, b);
+    this.mergeObjects(defaults, opts);
+    this.mergeValidationTypes(defaults, opts);
   },
 
   //Merge properties of b and a.
@@ -137,22 +136,24 @@ var Validator = {
     var bv = b.validationTypes;
     if(bv.hasOwnProperty('length') && bv.length > 0){
 
-      bv.forEach(function(bel){
+      for(var i = 0; i < bv.length; i++){
+        var bel = bv[i];
         var found = false;
         if(bel.hasOwnProperty('name')){
 
-          av.forEach(function(ael, i){
+          for(var j = 0; j < av.length; j++){
+            var ael = av[j];
             if(ael.name == bel.name){
               found = true;
-              av[i] = this.mergeObjects(ael, bel);
+              av[j] = this.mergeObjects(ael, bel);
             }
-          });
+          }
 
           if(!found){
             av.push(bel);
           }
         }
-      });
+      }
       a.validationTypes = av;
     }
 
@@ -160,14 +161,35 @@ var Validator = {
   },
 
   validate: function(form){
+    if(!form){
+      if(!this.form){
+        return false;
+      } else {
+        form = this.form;
+      }
+    }
     var fields = [];
     var failedFields = [];
 
     fields = this.findFields(form);
-
+    
     this.unmarkFields(fields);
     failedFields = this.runTests(fields);
+    
 
+    if(failedFields.length > 0){
+      this.handleFails(failedFields);
+    }
+
+    return this.valid;
+  },
+
+  validateField: function(fieldId){
+    var fields = document.querySelectorAll(fieldId);
+    var failedFields = [];
+
+    this.unmarkFields(fields);
+    failedFields = this.runTests(fields);   
 
     if(failedFields.length > 0){
       this.handleFails(failedFields);
@@ -179,16 +201,18 @@ var Validator = {
   //finding fields should use the inputSelector moving forward
   findFields: function(form){
     var fields = [];
-    for (var i = 0; i < this.formElements.length; i++) {
-      var result = form.querySelectorAll(this.formElements[i]);
+    // for (var i = 0; i < this.formElements.length; i++) {
+      // var result = form.querySelectorAll(this.formElements[i]);
+      var result = form.querySelectorAll(this.inputSelector);
       for (var j = 0; j < result.length; j++) {
         fields.push(result[j]);
       }
-    }
+    // }
     return fields;
   },
 
   unmarkFields: function(fields){
+    this.removeErrorDivs();
     for (var i = 0; i < fields.length; i++) {
       fields[i].classList.remove('error');
     }
@@ -202,7 +226,6 @@ var Validator = {
 
   handleFails: function(failedFields){
     this.markFailedFields(failedFields);
-    this.clearErrorDivs();
 
     //If appending to one location
     // errorString = buildErrorString(failedFields);
@@ -212,10 +235,11 @@ var Validator = {
     this.appendErrorsToFields(failedFields);
   },
 
-  clearErrorDivs: function(){
-    document.querySelectorAll('.error-message').forEach(function(el){
-      el.innerHTML = '';
-    });
+  removeErrorDivs: function(){
+    var errorDivs = document.querySelectorAll('.error-message');
+    for(var i = 0; i < errorDivs.length; i++){
+      errorDivs[i].parentNode.removeChild(errorDivs[i]);
+    }
   },
 
   runTests: function(fields){
@@ -235,11 +259,14 @@ var Validator = {
           vtypes.push('required');
         }
 
-        var sortedVtypes = this.sortVtypesByWeight(vtypes);
+        var sortedVtypes = this.sortVtypesByWeight(vtypes);   
 
         for (var j = 0; j < sortedVtypes.length; j++) {
           var vt = this.findVtype(sortedVtypes[j]);
           var test = vt.test.call(f);
+
+          console.log("test.name", vt.name, test);
+          
 
           if(test == false){
             this.valid = false;
@@ -335,7 +362,7 @@ var Validator = {
   },
 
   //Intended for use when appending errors directly to their respective fields
-  appendErrorsToFields: function(failedFields){
+  appendErrorsToFields: function(failedFields){    
     for (var i = 0; i < failedFields.length; i++) {
       failedFields[i].el.insertAdjacentHTML('afterend', '<div class="error-message"><p>'+ failedFields[i].error +'</p></div>');
     }
