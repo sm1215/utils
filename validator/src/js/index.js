@@ -17,10 +17,10 @@ document.addEventListener('DOMContentLoaded', function(){
   //   ]
   // });
 
-  // document.querySelector('input[type="submit"]').addEventListener('click', function(e){
-  //   e.preventDefault();
-  //   validator.validate(document.querySelector('form'));
-  // });
+  document.querySelector('input[type="submit"]').addEventListener('click', function(e){
+    e.preventDefault();
+    validator.validate();
+  });
   //run on refresh
   // validator.validate(document.querySelector('form'));
 

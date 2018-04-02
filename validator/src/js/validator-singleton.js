@@ -9,8 +9,7 @@ var Validator = {
 
     //Defaults
     this.form = 'default-form';
-    this.formElements = ['input', 'textarea', 'select', 'radio'];
-    this.inputSelector = 'data-vtypes';
+    this.inputSelector = '[data-vtypes]';
     this.valid = true;
     this.errorString = '';
     this.errorTarget = document.querySelector('#errors');
@@ -63,7 +62,7 @@ var Validator = {
         test: function(){
           return /^(\d{1,2})(\/|-)(\d{1,2})(\/|-)(([\d]{4})|([\d]{2}))$/.test(this.value);
         },
-        error: 'Incorrect date format. (1-1-2018)'
+        error: 'Incorrect date format. (DD-MM-YYY)'
       },
       {
         name: 'number',
@@ -168,14 +167,18 @@ var Validator = {
         form = this.form;
       }
     }
+
+    console.log("form", form);
+    
     var fields = [];
     var failedFields = [];
 
     fields = this.findFields(form);
+
+    console.log("fields", fields);    
     
     this.unmarkFields(fields);
-    failedFields = this.runTests(fields);
-    
+    failedFields = this.runTests(fields);    
 
     if(failedFields.length > 0){
       this.handleFails(failedFields);
@@ -201,13 +204,10 @@ var Validator = {
   //finding fields should use the inputSelector moving forward
   findFields: function(form){
     var fields = [];
-    // for (var i = 0; i < this.formElements.length; i++) {
-      // var result = form.querySelectorAll(this.formElements[i]);
-      var result = form.querySelectorAll(this.inputSelector);
-      for (var j = 0; j < result.length; j++) {
-        fields.push(result[j]);
-      }
-    // }
+    var result = form.querySelectorAll(this.inputSelector);
+    for (var j = 0; j < result.length; j++) {
+      fields.push(result[j]);
+    }
     return fields;
   },
 
