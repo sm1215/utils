@@ -11,7 +11,6 @@ var Validator = {
     this.container = document.querySelector('form');
     this.inputSelector = '[data-vtypes]';
     this.valid = true;
-    this.errorString = '';
     this.errorTarget = undefined;
     this.validationTypes = [
       {
@@ -366,10 +365,6 @@ var Validator = {
     for (var i = 0; i < failedFields.length; i++) {
       failedFields[i].el.insertAdjacentHTML('afterend', '<div class="error-message"><p>'+ failedFields[i].error +'</p></div>');
     }
-  },
-
-  getErrorString: function(){
-    return this.errorString;
   },
 
   isValid: function(){
