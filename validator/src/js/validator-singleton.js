@@ -1,7 +1,7 @@
 /*
 *  Frontend validator singleton
 *  Author: Sam Miller
-*  Version 0.0.8
+*  Version 0.0.9
 */
 
 var Validator = {
@@ -12,7 +12,7 @@ var Validator = {
     this.inputSelector = '[data-vtypes]';
     this.valid = true;
     this.errorString = '';
-    this.errorTarget = document.querySelector('#errors');
+    this.errorTarget = undefined;
     this.validationTypes = [
       {
         name: 'required',
@@ -95,7 +95,7 @@ var Validator = {
   * init will take an opts object and overwrite any defaults that it matches
   * - form: selector for the form
   * - inputSelector: what to search the form for
-  * - errorTarget: should either be 'inline' for inline errors or a selector pointing to a specified element made for holding errors.
+  * - errorTarget: the target node to append errors to. if this is undefined, errors will be written near their failed fields.
   * - validationTypes: add these to the default array unless a matching name is found
   * - validationTypes (matching name): overwrite any matching properties. maybe the user just wants to change the error message and leave the rest.
   */
@@ -167,15 +167,11 @@ var Validator = {
         form = this.form;
       }
     }
-
-    console.log("form", form);
     
     var fields = [];
     var failedFields = [];
 
     fields = this.findFields(form);
-
-    console.log("fields", fields);    
     
     this.unmarkFields(fields);
     failedFields = this.runTests(fields);    
@@ -201,7 +197,6 @@ var Validator = {
     return this.valid;
   },
 
-  //finding fields should use the inputSelector moving forward
   findFields: function(form){
     var fields = [];
     var result = form.querySelectorAll(this.inputSelector);
@@ -227,12 +222,12 @@ var Validator = {
   handleFails: function(failedFields){
     this.markFailedFields(failedFields);
 
-    //If appending to one location
-    // errorString = buildErrorString(failedFields);
-    // writeErrorsToTarget(errorString);
-
-    //If appending to fields
-    this.appendErrorsToFields(failedFields);
+    // If an error target has been specified, append errors there, otherwise inline them.
+    if(this.errorTarget){
+      this.appendErrorsToTarget(failedFields);
+    } else {
+      this.appendErrorsToFields(failedFields);
+    }
   },
 
   removeErrorDivs: function(){
@@ -264,9 +259,6 @@ var Validator = {
         for (var j = 0; j < sortedVtypes.length; j++) {
           var vt = this.findVtype(sortedVtypes[j]);
           var test = vt.test.call(f);
-
-          console.log("test.name", vt.name, test);
-          
 
           if(test == false){
             this.valid = false;
@@ -348,21 +340,19 @@ var Validator = {
   },
 
   //Intended for use when appending all errors to the same location, like the bottom of a form
-  buildErrorString: function(failedFields){
-    var es = '<ul class="form-errors">';
-    for (var i = 0; i < failedFields.length; i++) {
-      es += '<li>' + failedFields[i].error + '</li>';
+  appendErrorsToTarget: function(failedFields){
+    if(!this.errorTarget){
+      return;
     }
-    es += '</ul>';
-    return es;
-  },
-
-  writeErrorsToTarget: function(errorString){
-    errorTarget.innerHTML = errorString;
+    var es = '';
+    for (var i = 0; i < failedFields.length; i++) {
+      es += '<div class="error-message><p>' + failedFields[i].error + '</p></div>';
+    }
+    this.errorTarget.innerHTML = es;
   },
 
   //Intended for use when appending errors directly to their respective fields
-  appendErrorsToFields: function(failedFields){    
+  appendErrorsToFields: function(failedFields){
     for (var i = 0; i < failedFields.length; i++) {
       failedFields[i].el.insertAdjacentHTML('afterend', '<div class="error-message"><p>'+ failedFields[i].error +'</p></div>');
     }

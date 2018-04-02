@@ -31,6 +31,7 @@ document.addEventListener('DOMContentLoaded', function(){
   var validator = Validator;
   validator.construct({
     form: document.querySelector('form')
+    // errorTarget: document.querySelector('#errors')
   });
   validator.validate();
 });
