@@ -33,5 +33,5 @@ document.addEventListener('DOMContentLoaded', function(){
     form: document.querySelector('form')
     // errorTarget: document.querySelector('#errors')
   });
-  validator.validate();
+  validator.validate(undefined, ['#text-only-validate-this', '#checkbox']);
 });

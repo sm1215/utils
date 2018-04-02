@@ -1,14 +1,14 @@
 /*
 *  Frontend validator singleton
 *  Author: Sam Miller
-*  Version 0.0.9
+*  Version 0.0.10
 */
 
 var Validator = {
   construct: function(opts){
 
     //Defaults
-    this.form = 'default-form';
+    this.container = document.querySelector('form');
     this.inputSelector = '[data-vtypes]';
     this.valid = true;
     this.errorString = '';
@@ -93,7 +93,7 @@ var Validator = {
 
   /*
   * init will take an opts object and overwrite any defaults that it matches
-  * - form: selector for the form
+  * - container: container element. the contents of this element will be searched using the inputSelector
   * - inputSelector: what to search the form for
   * - errorTarget: the target node to append errors to. if this is undefined, errors will be written near their failed fields.
   * - validationTypes: add these to the default array unless a matching name is found
@@ -109,9 +109,11 @@ var Validator = {
     this.mergeValidationTypes(defaults, opts);
   },
 
-  //Merge properties of b and a.
-  //If a matching key is found between the two, the value of b should override the value of a.
-  //Returns the modified 'a' object
+  /*
+  *  Merge properties of b and a.
+  *  If a matching key is found between the two, the value of b should override the value of a.
+  *  Returns the modified 'a' object
+  */
   mergeObjects: function(a, b){
     if(typeof(a) == 'object' && typeof(b) == 'object'){
       for(var key in b){
@@ -159,20 +161,31 @@ var Validator = {
     return a;
   },
 
-  validate: function(form){
-    if(!form){
-      if(!this.form){
+  /*
+  * Optional parameters
+  * @container Object: node element
+  *   - If no container is specified here, the default is used, which should have been defined during construction.
+  *   - This can be used to validate blocks of a form separately, such as a multi-page form.
+  * 
+  * @targetElSelectors Array[strings]
+  *   - If targetElSelectors are specified, the container will be searched for those
+  *   - instead of using "this.inputSelector" defined during construction.
+  *   - Example ['#my-id', '.my-class-1', '.my-class-2']
+  */
+  validate: function(container, targetElSelectors){
+    if(!container){
+      if(!this.container){
         return false;
       } else {
-        form = this.form;
+        container = this.container;
       }
     }
     
     var fields = [];
     var failedFields = [];
 
-    fields = this.findFields(form);
-    
+    fields = this.findFields(container, targetElSelectors);
+
     this.unmarkFields(fields);
     failedFields = this.runTests(fields);    
 
@@ -183,23 +196,19 @@ var Validator = {
     return this.valid;
   },
 
-  validateField: function(fieldId){
-    var fields = document.querySelectorAll(fieldId);
-    var failedFields = [];
-
-    this.unmarkFields(fields);
-    failedFields = this.runTests(fields);   
-
-    if(failedFields.length > 0){
-      this.handleFails(failedFields);
-    }
-
-    return this.valid;
-  },
-
-  findFields: function(form){
+  findFields: function(container, targetElSelectors){
     var fields = [];
-    var result = form.querySelectorAll(this.inputSelector);
+    var result = [];
+    if(!targetElSelectors){
+      result = container.querySelectorAll(this.inputSelector);
+    } else {
+      for(var i = 0; i < targetElSelectors.length; i++){
+        var found = container.querySelectorAll(targetElSelectors[i]);
+        for(var j = 0; j < found.length; j++){
+          result.push(found[j]);
+        }
+      }
+    }
     for (var j = 0; j < result.length; j++) {
       fields.push(result[j]);
     }
@@ -273,12 +282,13 @@ var Validator = {
     return failedFields;
   },
 
+  // This is mainly a dev testing function
   runTest: function(vtype, value){
     return this.findVtype(vtype).test(value);
   },
 
-  //This will take the vtypes provided by the dev in html and sort them according to the weights found in the validationTypes object
-  //Returns the sorted array
+  // This will take the vtypes provided by the dev in html and sort them according to the weights found in the validationTypes object
+  // Returns the sorted array
   sortVtypesByWeight: function(vtypes){
     if(vtypes.length <= 1){
       return vtypes;
@@ -319,7 +329,7 @@ var Validator = {
     return false;
   },
 
-  //returns array location if true
+  // Returns array location if true
   arrayContainsNode: function(arr, node){
     for (var i = 0; i < arr.length; i++) {
       if(arr[i].hasOwnProperty('el') && arr[i].el.isSameNode(node)){
@@ -329,7 +339,7 @@ var Validator = {
     return false;
   },
 
-  //returns array location if true
+  // Returns array location if true
   arrayContainsString: function(arr, string){
     for (var i = 0; i < arr.length; i++) {
       if(arr[i] == string){
@@ -339,7 +349,7 @@ var Validator = {
     return false;
   },
 
-  //Intended for use when appending all errors to the same location, like the bottom of a form
+  // Intended for use when appending all errors to the same location, like the bottom of a form
   appendErrorsToTarget: function(failedFields){
     if(!this.errorTarget){
       return;
@@ -351,7 +361,7 @@ var Validator = {
     this.errorTarget.innerHTML = es;
   },
 
-  //Intended for use when appending errors directly to their respective fields
+  // Intended for use when appending errors directly to their respective fields
   appendErrorsToFields: function(failedFields){
     for (var i = 0; i < failedFields.length; i++) {
       failedFields[i].el.insertAdjacentHTML('afterend', '<div class="error-message"><p>'+ failedFields[i].error +'</p></div>');
